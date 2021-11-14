@@ -1,0 +1,2 @@
+rootProject.name = 'EZ Glossa'
+include('app')
