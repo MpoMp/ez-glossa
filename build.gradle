@@ -12,11 +12,11 @@ repositories {
 }
 
 ext {
-    junitVersion = '5.7.1'
+    junitVersion = '5.8.1'
 }
 
-sourceCompatibility = '17'
-targetCompatibility = '17'
+//sourceCompatibility = '17'
+//targetCompatibility = '17'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -24,7 +24,7 @@ tasks.withType(JavaCompile) {
 
 application {
     mainModule = 'mbogdanos.ezglossa'
-    mainClass = 'mbogdanos.ezglossa.HelloApplication'
+    mainClass = 'mbogdanos.ezglossa.EZGApp'
 }
 
 javafx {
@@ -33,8 +33,11 @@ javafx {
 }
 
 dependencies {
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api',  version: '2.14.1'
+    runtimeOnly    group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.14.1'
+
     implementation('org.controlsfx:controlsfx:11.1.0')
-    implementation('com.dlsc.formsfx:formsfx-core:11.3.2') {
+    implementation('com.dlsc.formsfx:formsfx-core:11.4.2') {
         exclude(group: 'org.openjfx')
     }
 
