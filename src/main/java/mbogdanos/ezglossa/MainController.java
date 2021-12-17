@@ -9,26 +9,27 @@ import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import mbogdanos.ezglossa.files.FileHandlingUtils;
+import mbogdanos.ezglossa.utils.SavePromptButtonResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-public class MainController   {
+public class MainController {
 
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
 
     @FXML
     private TextArea textArea;
+    @FXML
+    private Stage stage;
 
     private File loadedFileReference;
     private FileChooser fileChooser;
-
-    @FXML
-    private Stage stage;
 
     public void initialize() {
         fileChooser = new FileChooser();
@@ -41,44 +42,75 @@ public class MainController   {
                         new FileChooser.ExtensionFilter("All Files", "*.*"));
     }
 
+
     @FXML
     public void newFile() {
-        textArea.clear();
-        textArea.setEditable(true);
 
+        SavePromptButtonResult saveButtonResult = showSavePrompt();
+
+        switch (saveButtonResult) {
+            case NO -> {
+                textArea.clear();
+                textArea.setEditable(true);
+            }
+            case YES -> {
+                saveFile();
+                textArea.clear();
+                textArea.setEditable(true);
+            }
+        }
     }
+
 
     @FXML
     protected void openFile() {
 
-        File fileToLoad = fileChooser.showOpenDialog(null);
-        if (fileToLoad != null) {
-            Task<String> fileLoaderTask = FileHandlingUtils.generateFileLoaderTask(fileToLoad);
-            fileLoaderTask.setOnSucceeded(workerStateEvent -> {
-                try {
-                    this.textArea.setText(fileLoaderTask.get());
-                    this.loadedFileReference = fileToLoad;
-                } catch (InterruptedException | ExecutionException e) {
-                    LOGGER.error(e);
-                    this.textArea.setText("Could not load file from:\n " + fileToLoad.getAbsolutePath());
-                    Thread.currentThread().interrupt();
-                }
-            });
+        SavePromptButtonResult saveButtonResult = showSavePrompt();
 
-            fileLoaderTask.setOnFailed(workerStateEvent ->
-                    this.textArea.setText("Could not load file from:\n " + fileToLoad.getAbsolutePath()));
-
-            fileLoaderTask.run();
-            textArea.setEditable(true);
+        switch (saveButtonResult) {
+            case CANCEL:
+                return;
+            case YES:
+                saveFile();
+                break;
         }
+
+        File fileToLoad = fileChooser.showOpenDialog(null);
+        if (fileToLoad == null) {
+            LOGGER.debug("Null file returned, no choice from user.");
+            return;
+        }
+
+        Task<String> fileLoaderTask = FileHandlingUtils.generateFileLoaderTask(fileToLoad);
+        fileLoaderTask.setOnSucceeded(workerStateEvent -> {
+            try {
+                this.textArea.setText(fileLoaderTask.get());
+                this.loadedFileReference = fileToLoad;
+            } catch (InterruptedException | ExecutionException e) {
+                LOGGER.error(e);
+                this.textArea.setText("Could not load file from:\n " + fileToLoad.getAbsolutePath());
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        fileLoaderTask.setOnFailed(workerStateEvent ->
+                this.textArea.setText("Could not load file from:\n " + fileToLoad.getAbsolutePath()));
+
+        fileLoaderTask.run();
+        textArea.setEditable(true);
     }
 
 
     @FXML
     public void saveFile() {
         try {
-            if(loadedFileReference==null){
+            if (loadedFileReference == null) {
                 loadedFileReference = fileChooser.showSaveDialog(stage);
+            }
+
+            if (loadedFileReference == null) {
+                LOGGER.debug("User did not choose a file to save to.");
+                return;
             }
 
             try (FileWriter myWriter = new FileWriter(loadedFileReference)) {
@@ -98,25 +130,31 @@ public class MainController   {
             return;
         }
 
+        SavePromptButtonResult saveButtonResult = showSavePrompt();
+
+        switch (saveButtonResult) {
+            case NO -> Platform.exit();
+            case YES -> {
+                saveFile();
+                Platform.exit();
+            }
+        }
+    }
+
+    private SavePromptButtonResult showSavePrompt() {
         Alert alert = new Alert(
                 Alert.AlertType.CONFIRMATION,
-                "Exit without saving?",
+                "Do you want to save the current file?",
                 ButtonType.YES,
                 ButtonType.NO,
                 ButtonType.CANCEL
         );
 
-        alert.setTitle("Confirm");
         alert.showAndWait();
 
-        if (alert.getResult() == ButtonType.YES) {
-            Platform.exit();
-        }
-        if (alert.getResult() == ButtonType.NO) {
-            saveFile();
-            Platform.exit();
-        }
+        SavePromptButtonResult saveButtonResult = SavePromptButtonResult.fromButtonType(alert.getResult());
+        Objects.requireNonNull(saveButtonResult, "No mapping for button " + alert.getResult());
+
+        return saveButtonResult;
     }
-
-
 }
