@@ -15,8 +15,8 @@ ext {
     junitVersion = '5.8.2'
 }
 
-//sourceCompatibility = '17'
-//targetCompatibility = '17'
+sourceCompatibility = '17.0.1'
+targetCompatibility = '17.0.1'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -33,8 +33,10 @@ javafx {
 }
 
 dependencies {
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api',  version: '2.16.0'
-    runtimeOnly    group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.16.0'
+    compileOnly group: 'org.jetbrains', name: 'annotations', version: '22.0.0'
+
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.16.0'
+    runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.16.0'
 
     implementation('org.controlsfx:controlsfx:11.1.0')
     implementation('com.dlsc.formsfx:formsfx-core:11.4.2') {
